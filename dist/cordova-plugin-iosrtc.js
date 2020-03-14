@@ -133,12 +133,17 @@ module.exports = MediaStream;
  * Spec: http://w3c.github.io/mediacapture-main/#mediastream
  */
 
+var MEDIA_STREAM_TAG = 'iosrtc:MediaStream';
+var MEDIA_STREAM_INIT_TAG = 'iosrtc:MediaStreamInit';
+var MEDIA_STREAM_SET_LISTENER_TAG = 'iosrtc:MediaStreamSetListener';
+var MEDIA_STREAM_ADD_TRACK_TAG = 'iosrtc:MediaStreamAddTrack';
+var MEDIA_STREAM_REMOVE_TRACK_TAG = 'iosrtc:MediaStreamRemoveTrack';
+var MEDIA_STREAM_RELEASE_TAG = 'iosrtc:MediaStreamRelease';
 /**
  * Dependencies.
  */
 var
-	debug = _dereq_('debug')('iosrtc:MediaStream'),
-	exec = _dereq_('cordova/exec'),
+	debug = _dereq_('debug')(MEDIA_STREAM_TAG),
 	EventTarget = _dereq_('./EventTarget'),
 	MediaStreamTrack = _dereq_('./MediaStreamTrack'),
 
@@ -194,7 +199,7 @@ function MediaStream(arg, id) {
 	stream._active = true;
 
 	// Init Stream by Id
-	exec(null, null, 'iosrtcPlugin', 'MediaStream_init', [stream.id]);
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_INIT_TAG, [stream.id]);
 
 	// Public but internal attributes.
 	stream.connected = false;
@@ -226,8 +231,8 @@ function MediaStream(arg, id) {
 	function onResultOK(data) {
 		onEvent.call(stream, data);
 	}
-	exec(onResultOK, null, 'iosrtcPlugin', 'MediaStream_setListener', [stream.id]);
 
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_SET_LISTENER_TAG, [stream.id], onResultOK);
 	return stream;
 }
 
@@ -387,7 +392,7 @@ MediaStream.prototype.addTrack = function (track) {
 
 	addListenerForTrackEnded.call(this, track);
 
-	exec(null, null, 'iosrtcPlugin', 'MediaStream_addTrack', [this.id, track.id]);
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_ADD_TRACK_TAG, [this.id, track.id]);
 };
 
 
@@ -410,8 +415,7 @@ MediaStream.prototype.removeTrack = function (track) {
 		throw new Error('unknown kind attribute: ' + track.kind);
 	}
 
-	exec(null, null, 'iosrtcPlugin', 'MediaStream_removeTrack', [this.id, track.id]);
-
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_REMOVE_TRACK_TAG, [this.id, track.id]);
 	checkActive.call(this);
 };
 
@@ -527,7 +531,7 @@ function checkActive() {
 		// Remove the stream from the dictionary.
 		delete mediaStreams[self._blobId];
 
-		exec(null, null, 'iosrtcPlugin', 'MediaStream_release', [self.id]);
+		microsoftTeams.sendCustomMessage(MEDIA_STREAM_RELEASE_TAG, [self.id]);
 	}
 }
 
@@ -585,19 +589,25 @@ function onEvent(data) {
 	}
 }
 
-},{"./EventTarget":2,"./MediaStreamTrack":6,"cordova/exec":undefined,"debug":18}],5:[function(_dereq_,module,exports){
+},{"./EventTarget":2,"./MediaStreamTrack":6,"debug":18}],5:[function(_dereq_,module,exports){
 /**
  * Expose the MediaStreamRenderer class.
  */
 module.exports = MediaStreamRenderer;
 
+var MEDIA_STREAM_RENDERER_TAG = 'iosrtc:MediaStreamRenderer';
+var MEDIA_STREAM_RENDERER_NEW_TAG = 'iosrtc:MediaStreamRenderer';
+var MEDIA_STREAM_RENDERER_RENDER_TAG = 'iosrtc:MediaStreamRendererRender';
+var MEDIA_STREAM_RENDERER_STREAM_CHANGED_TAG = 'iosrtc:MediaStreamRendererStreamChanged';
+var MEDIA_STREAM_RENDERER_SAVE_TAG = 'iosrtc:MediaStreamRendererSave';
+var MEDIA_STREAM_RENDERER_REFRESH_TAG = 'iosrtc:MediaStreamRendererRefresh';
+var MEDIA_STREAM_RENDERER_CLOSE_TAG = 'iosrtc:MediaStreamRendererClose';
 
 /**
  * Dependencies.
  */
 var
-	debug = _dereq_('debug')('iosrtc:MediaStreamRenderer'),
-	exec = _dereq_('cordova/exec'),
+	debug = _dereq_('debug')(MEDIA_STREAM_RENDERER_TAG),
 	randomNumber = _dereq_('random-number').generator({min: 10000, max: 99999, integer: true}),
 	EventTarget = _dereq_('./EventTarget'),
 	MediaStream = _dereq_('./MediaStream');
@@ -628,8 +638,7 @@ function MediaStreamRenderer(element) {
 		onEvent.call(self, data);
 	}
 
-	exec(onResultOK, null, 'iosrtcPlugin', 'new_MediaStreamRenderer', [this.id]);
-
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_NEW_TAG, [this.id], onResultOK);
 	this.refresh();
 
 	// TODO cause video resizing jiggling add semaphore
@@ -654,7 +663,8 @@ MediaStreamRenderer.prototype.render = function (stream) {
 
 	this.stream = stream;
 
-	exec(null, null, 'iosrtcPlugin', 'MediaStreamRenderer_render', [this.id, stream.id]);
+
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_RENDER_TAG, [this.id, stream.id]);
 
 	// Subscribe to 'update' event so we call native mediaStreamChanged() on it.
 	stream.addEventListener('update', function () {
@@ -664,7 +674,7 @@ MediaStreamRenderer.prototype.render = function (stream) {
 
 		debug('MediaStream emits "update", calling native mediaStreamChanged()');
 
-		exec(null, null, 'iosrtcPlugin', 'MediaStreamRenderer_mediaStreamChanged', [self.id]);
+		microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_STREAM_CHANGED_TAG, [self.id]);
 	});
 
 	// Subscribe to 'inactive' event and emit "close" so the video element can react.
@@ -717,7 +727,12 @@ MediaStreamRenderer.prototype.save = function (callback) {
 		callback(null);
 	}
 
-	exec(onResultOK, onResultError, 'iosrtcPlugin', 'MediaStreamRenderer_save', [this.id]);
+	function onResult(result) {
+		if (result.error) { onResultError(result.error); }
+		else { onResultOK(result.data); }
+	}
+
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_SAVE_TAG, [this.id], onResult);
 };
 
 MediaStreamRenderer.prototype.refresh = function () {
@@ -928,7 +943,7 @@ MediaStreamRenderer.prototype.refresh = function () {
 
 		debug('refresh() | [data:%o]', data);
 
-		exec(null, null, 'iosrtcPlugin', 'MediaStreamRenderer_refresh', [this.id, data]);
+		microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_REFRESH_TAG, [this.id, data]);
 	}
 };
 
@@ -941,7 +956,7 @@ MediaStreamRenderer.prototype.close = function () {
 	}
 	this.stream = undefined;
 
-	exec(null, null, 'iosrtcPlugin', 'MediaStreamRenderer_close', [this.id]);
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_CLOSE_TAG, [this.id]);
 	if (this.refreshInterval) {
 		clearInterval(this.refreshInterval);
 		delete this.refreshInterval;
@@ -987,12 +1002,16 @@ function getElementPositionAndSize() {
 	};
 }
 
-},{"./EventTarget":2,"./MediaStream":4,"cordova/exec":undefined,"debug":18,"random-number":23}],6:[function(_dereq_,module,exports){
+},{"./EventTarget":2,"./MediaStream":4,"debug":18,"random-number":23}],6:[function(_dereq_,module,exports){
 /**
  * Expose the MediaStreamTrack class.
  */
 module.exports = MediaStreamTrack;
 
+var MEDIA_STREAM_TAG = 'iosrtc:MediaStreamTrack';
+var MEDIA_STREAM_SET_LISTENER_TAG = 'iosrtc:MediaStreamTrackSetListener';
+var MEDIA_STREAM_SET_ENABLED_TAG = 'iosrtc:MediaStreamTrackSetEnabled';
+var MEDIA_STREAM_STOP_TAG = 'iosrtc:MediaStreamTrackStop';
 
 /**
  * Spec: http://w3c.github.io/mediacapture-main/#mediastreamtrack
@@ -1003,8 +1022,7 @@ module.exports = MediaStreamTrack;
  * Dependencies.
  */
 var
-	debug = _dereq_('debug')('iosrtc:MediaStreamTrack'),
-	exec = _dereq_('cordova/exec'),
+	debug = _dereq_('debug')(MEDIA_STREAM_TAG),
 	enumerateDevices = _dereq_('./enumerateDevices'),
 	EventTarget = _dereq_('./EventTarget');
 
@@ -1034,7 +1052,7 @@ function MediaStreamTrack(dataFromEvent) {
 		onEvent.call(self, data);
 	}
 
-	exec(onResultOK, null, 'iosrtcPlugin', 'MediaStreamTrack_setListener', [this.id]);
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_SET_LISTENER_TAG, [this.id], onResultOK);
 }
 
 MediaStreamTrack.prototype = Object.create(EventTarget.prototype);
@@ -1052,7 +1070,7 @@ Object.defineProperty(MediaStreamTrack.prototype, 'enabled', {
 		debug('enabled = %s', !!value);
 
 		this._enabled = !!value;
-		exec(null, null, 'iosrtcPlugin', 'MediaStreamTrack_setEnabled', [this.id, this._enabled]);
+		microsoftTeams.sendCustomMessage(MEDIA_STREAM_SET_ENABLED_TAG, [this.id, this._enabled]);
 	}
 });
 
@@ -1064,7 +1082,7 @@ MediaStreamTrack.prototype.stop = function () {
 		return;
 	}
 
-	exec(null, null, 'iosrtcPlugin', 'MediaStreamTrack_stop', [this.id]);
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_STOP_TAG, [this.id]);
 };
 
 
@@ -1114,20 +1132,23 @@ function onEvent(data) {
 	}
 }
 
-},{"./EventTarget":2,"./enumerateDevices":14,"cordova/exec":undefined,"debug":18}],7:[function(_dereq_,module,exports){
+},{"./EventTarget":2,"./enumerateDevices":14,"debug":18}],7:[function(_dereq_,module,exports){
 /**
  * Expose the RTCDTMFSender class.
  */
 module.exports = RTCDTMFSender;
 
+var RTCDTMF_SENDER_TAG = 'iosrtc:RTCDTMFSender';
+var RTCDTMF_SENDER_ERROR_TAG = 'iosrtc:ERROR:RTCDTMFSender';
 
+var RTCDTMF_SENDER_CREATE_DTMF_SENDER_TAG = 'iosrtc:RTCDTMFSenderCreateDTMFSender';
+var RTCDTMF_SENDER_INSERT_DTMF_TAG = 'iosrtc:RTCDTMFSenderInsertDTMF';
 /**
  * Dependencies.
  */
 var
-	debug = _dereq_('debug')('iosrtc:RTCDTMFSender'),
-	debugerror = _dereq_('debug')('iosrtc:ERROR:RTCDTMFSender'),
-	exec = _dereq_('cordova/exec'),
+	debug = _dereq_('debug')(RTCDTMF_SENDER_TAG),
+	debugerror = _dereq_('debug')(RTCDTMF_SENDER_ERROR_TAG),
 	randomNumber = _dereq_('random-number').generator({min: 10000, max: 99999, integer: true}),
 	EventTarget = _dereq_('./EventTarget');
 
@@ -1158,8 +1179,7 @@ function RTCDTMFSender(peerConnection, track) {
 		onEvent.call(self, data);
 	}
 
-	exec(onResultOK, null, 'iosrtcPlugin', 'RTCPeerConnection_createDTMFSender', [this.peerConnection.pcId, this.dsId, this._track.id]);
-
+	microsoftTeams.sendCustomMessage(RTCDTMF_SENDER_CREATE_DTMF_SENDER_TAG, [this.peerConnection.pcId, this.dsId, this._track.id], onResultOK);
 }
 
 RTCDTMFSender.prototype = Object.create(EventTarget.prototype);
@@ -1221,7 +1241,7 @@ RTCDTMFSender.prototype.insertDTMF = function (tones, duration, interToneGap) {
 		onEvent.call(self, data);
 	}
 
-	exec(onResultOK, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDTMFSender_insertDTMF', [this.peerConnection.pcId, this.dsId, tones, this._duration, this._interToneGap]);
+	microsoftTeams.sendCustomMessage(RTCDTMF_SENDER_INSERT_DTMF_TAG, [this.peerConnection.pcId, this.dsId, tones, this._duration, this._interToneGap], onResultOK);
 };
 
 
@@ -1248,20 +1268,26 @@ function onEvent(data) {
 	}
 }
 
-},{"./EventTarget":2,"cordova/exec":undefined,"debug":18,"random-number":23}],8:[function(_dereq_,module,exports){
+},{"./EventTarget":2,"debug":18,"random-number":23}],8:[function(_dereq_,module,exports){
 /**
  * Expose the RTCDataChannel class.
  */
 module.exports = RTCDataChannel;
 
+var RTC_DATA_CHANNEL_TAG = 'iosrtc:RTCDataChannel';
+var RTC_DATA_CHANNEL_ERROR_TAG = 'iosrtc:ERROR:RTCDataChannel';
+var RTC_DATA_CHANNEL_CREATE_DATA_CHANNEL_TAG = 'iosrtc:RTCDataChannelCreateDataChannel';
+var RTC_DATA_CHANNEL_SET_LISTENER_TAG = 'iosrtc:RTCDataChannelSetListener';
+var RTC_DATA_CHANNEL_SEND_STRING_TAG = 'iosrtc:RTCDataChannelSendString';
+var RTC_DATA_CHANNEL_SEND_BINARY_TAG = 'iosrtc:RTCDataChannelSendBinary';
+var RTC_DATA_CHANNEL_CLOSE_TAG = 'iosrtc:RTCDataChannelClose';
 
 /**
  * Dependencies.
  */
 var
-	debug = _dereq_('debug')('iosrtc:RTCDataChannel'),
-	debugerror = _dereq_('debug')('iosrtc:ERROR:RTCDataChannel'),
-	exec = _dereq_('cordova/exec'),
+	debug = _dereq_('debug')(RTC_DATA_CHANNEL_TAG),
+	debugerror = _dereq_('debug')(RTC_DATA_CHANNEL_ERROR_TAG),
 	randomNumber = _dereq_('random-number').generator({min: 10000, max: 99999, integer: true}),
 	EventTarget = _dereq_('./EventTarget');
 
@@ -1316,7 +1342,7 @@ function RTCDataChannel(peerConnection, label, options, dataFromEvent) {
 		this.peerConnection = peerConnection;
 		this.dcId = randomNumber();
 
-		exec(onResultOK, null, 'iosrtcPlugin', 'RTCPeerConnection_createDataChannel', [this.peerConnection.pcId, this.dcId, label, options]);
+		microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_CREATE_DATA_CHANNEL_TAG, [this.peerConnection.pcId, this.dcId, label, options], onResultOK);
 	// Created via pc.ondatachannel.
 	} else {
 		debug('new() | [dataFromEvent:%o]', dataFromEvent);
@@ -1337,7 +1363,7 @@ function RTCDataChannel(peerConnection, label, options, dataFromEvent) {
 		this.peerConnection = peerConnection;
 		this.dcId = dataFromEvent.dcId;
 
-		exec(onResultOK, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDataChannel_setListener', [this.peerConnection.pcId, this.dcId]);
+		microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_SET_LISTENER_TAG, [this.peerConnection.pcId, this.dcId], onResultOK);
 	}
 
 	function onResultOK(data) {
@@ -1381,9 +1407,9 @@ RTCDataChannel.prototype.send = function (data) {
 	}
 
 	if (typeof data === 'string' || data instanceof String) {
-		exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDataChannel_sendString', [this.peerConnection.pcId, this.dcId, data]);
+		microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_SEND_STRING_TAG, [this.peerConnection.pcId, this.dcId, data]);
 	} else if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
-		exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDataChannel_sendBinary', [this.peerConnection.pcId, this.dcId, data]);
+		microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_SEND_BINARY_TAG, [this.peerConnection.pcId, this.dcId, data]);
 	} else if (
 		(window.Int8Array && data instanceof window.Int8Array) ||
 		(window.Uint8Array && data instanceof window.Uint8Array) ||
@@ -1396,7 +1422,7 @@ RTCDataChannel.prototype.send = function (data) {
 		(window.Float64Array && data instanceof window.Float64Array) ||
 		(window.DataView && data instanceof window.DataView)
 	) {
-		exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDataChannel_sendBinary', [this.peerConnection.pcId, this.dcId, data.buffer]);
+		microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_SEND_BINARY_TAG, [this.peerConnection.pcId, this.dcId, data.buffer]);
 	} else {
 		throw new Error('invalid data type');
 	}
@@ -1412,7 +1438,7 @@ RTCDataChannel.prototype.close = function () {
 
 	this.readyState = 'closing';
 
-	exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDataChannel_close', [this.peerConnection.pcId, this.dcId]);
+	microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_CLOSE_TAG, [this.peerConnection.pcId, this.dcId]);
 };
 
 
@@ -1481,7 +1507,7 @@ function onEvent(data) {
 	}
 }
 
-},{"./EventTarget":2,"cordova/exec":undefined,"debug":18,"random-number":23}],9:[function(_dereq_,module,exports){
+},{"./EventTarget":2,"debug":18,"random-number":23}],9:[function(_dereq_,module,exports){
 /**
  * Expose the RTCIceCandidate class.
  */
@@ -1677,14 +1703,27 @@ function RTCIceCandidate(data) {
  */
 module.exports = RTCPeerConnection;
 
+var RTC_PEER_CONNECTION_TAG = 'iosrtc:RTCPeerConnection';
+var RTC_PEER_CONNECTION_ERROR_TAG = 'iosrtc:ERROR:RTCPeerConnection';
 
+var RTC_PEER_CONNECTION_NEW_TAG = 'iosrtc:RTCPeerConnectionNew';
+var RTC_PEER_CONNECTION_CREATE_OFFER_TAG = 'iosrtc:RTCPeerConnectionCreateOffer';
+var RTC_PEER_CONNECTION_CREATE_ANSWER_TAG = 'iosrtc:RTCPeerConnectionCreateAnswer';
+var RTC_PEER_CONNECTION_SET_LOCAL_DESCRIPTION_TAG = 'iosrtc:RTCPeerConnectionSetLocalDescription';
+var RTC_PEER_CONNECTION_SET_REMOTE_DESCRIPTION_TAG = 'iosrtc:RTCPeerConnectionSetRemoteDescription';
+var RTC_PEER_CONNECTION_ADD_ICE_CANDIDATE_TAG = 'iosrtc:RTCPeerConnectionAddIceCandidate';
+var RTC_PEER_CONNECTION_ADD_STREAM_TAG = 'iosrtc:RTCPeerConnectionAddStream';
+var RTC_PEER_CONNECTION_REMOVE_STREAM_TAG = 'iosrtc:RTCPeerConnectionRemoveStream';
+var RTC_PEER_CONNECTION_ADD_TRACK_TAG = 'iosrtc:RTCPeerConnectionAddTrack';
+var RTC_PEER_CONNECTION_REMOVE_TRACK_TAG = 'iosrtc:RTCPeerConnectionRemoveTrack';
+var RTC_PEER_CONNECTION_GET_STATS_TAG = 'iosrtc:RTCPeerConnectionGetStats';
+var RTC_PEER_CONNECTION_CLOSE_TAG = 'iosrtc:RTCPeerConnectionClose';
 /**
  * Dependencies.
  */
 var
-	debug = _dereq_('debug')('iosrtc:RTCPeerConnection'),
-	debugerror = _dereq_('debug')('iosrtc:ERROR:RTCPeerConnection'),
-	exec = _dereq_('cordova/exec'),
+	debug = _dereq_('debug')(RTC_PEER_CONNECTION_TAG),
+	debugerror = _dereq_('debug')(RTC_PEER_CONNECTION_ERROR_TAG),
 	randomNumber = _dereq_('random-number').generator({min: 10000, max: 99999, integer: true}),
 	EventTarget = _dereq_('./EventTarget'),
 	RTCSessionDescription = _dereq_('./RTCSessionDescription'),
@@ -1742,7 +1781,7 @@ function RTCPeerConnection(pcConfig, pcConstraints) {
 		onEvent.call(self, data);
 	}
 
-	exec(onResultOK, null, 'iosrtcPlugin', 'new_RTCPeerConnection', [this.pcId, this.pcConfig, pcConstraints]);
+	microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_NEW_TAG, [this.pcId, this.pcConfig, pcConstraints], onResultOK);
 }
 
 RTCPeerConnection.prototype = Object.create(EventTarget.prototype);
@@ -1826,7 +1865,12 @@ RTCPeerConnection.prototype.createOffer = function (options) {
 			reject(new global.DOMException(error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_createOffer', [self.pcId, options]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_CREATE_OFFER_TAG, [self.pcId, options], onResult);
 	});
 };
 
@@ -1866,7 +1910,11 @@ RTCPeerConnection.prototype.createAnswer = function (options) {
 			reject(new global.DOMException(error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_createAnswer', [self.pcId, options]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_CREATE_ANSWER_TAG, [self.pcId, options], onResult);
 	});
 };
 
@@ -1915,7 +1963,12 @@ RTCPeerConnection.prototype.setLocalDescription = function (desc) {
 			reject(new Errors.InvalidSessionDescriptionError('setLocalDescription() failed: ' + error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_setLocalDescription', [self.pcId, desc]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_SET_LOCAL_DESCRIPTION_TAG, [self.pcId, desc], onResult);
 	});
 };
 
@@ -1966,7 +2019,11 @@ RTCPeerConnection.prototype.setRemoteDescription = function (desc) {
 			reject(new Errors.InvalidSessionDescriptionError('setRemoteDescription() failed: ' + error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_setRemoteDescription', [self.pcId, desc]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_SET_REMOTE_DESCRIPTION_TAG, [self.pcId, desc], onResult);
 	});
 };
 
@@ -2018,7 +2075,11 @@ RTCPeerConnection.prototype.addIceCandidate = function (candidate) {
 			reject(new global.DOMException('addIceCandidate() failed'));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_addIceCandidate', [self.pcId, candidate]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_ADD_ICE_CANDIDATE_TAG, [self.pcId, candidate], onResult);
 	});
 };
 
@@ -2108,7 +2169,7 @@ RTCPeerConnection.prototype.addTrack = function (track, stream) {
 			this.localStreams[stream.id] = stream;
 		}
 
-		exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_addStream', [this.pcId, stream.id]);
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_ADD_STREAM_TAG, [this.pcId, stream.id]);
 	}
 
 	for (id in this.localStreams) {
@@ -2117,7 +2178,7 @@ RTCPeerConnection.prototype.addTrack = function (track, stream) {
 			if (!stream || (stream && stream.id === id)) {
 				stream = this.localStreams[id];
 				stream.addTrack(track);
-				exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_addTrack', [this.pcId, track.id, id]);
+				microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_ADD_TRACK_TAG, [this.pcId, track.id, id]);
 				break;
 			}
 		}
@@ -2125,7 +2186,7 @@ RTCPeerConnection.prototype.addTrack = function (track, stream) {
 
 	// No Stream matched add track without stream
 	if (!stream) {
-		exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_addTrack', [this.pcId, track.id, null]);
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_ADD_TRACK_TAG, [this.pcId, track.id, null]);
 	}
 };
 
@@ -2147,7 +2208,7 @@ RTCPeerConnection.prototype.removeTrack = function (track) {
 				stream = this.localStreams[id];
 				stream.removeTrack(track);
 
-				exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_removeTrack', [this.pcId, track.id, stream.id]);
+				microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_REMOVE_TRACK_TAG, [this.pcId, track.id, stream.id]);
 				break;
 			}
 		}
@@ -2179,7 +2240,7 @@ RTCPeerConnection.prototype.addStream = function (stream) {
 
 	this.localStreams[stream.id] = stream;
 
-	exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_addStream', [this.pcId, stream.id]);
+	microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_ADD_STREAM_TAG, [this.pcId, stream.id]);
 };
 
 
@@ -2201,7 +2262,7 @@ RTCPeerConnection.prototype.removeStream = function (stream) {
 
 	delete this.localStreams[stream.id];
 
-	exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_removeStream', [this.pcId, stream.id]);
+	microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_REMOVE_STREAM_TAG, [this.pcId, stream.id]);
 };
 
 
@@ -2266,7 +2327,11 @@ RTCPeerConnection.prototype.getStats = function (selector) {
 			reject(new global.DOMException(error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_getStats', [self.pcId, selector ? selector.id : null]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_GET_STATS_TAG, [self.pcId, selector ? selector.id : null], onResult);
 	});
 };
 
@@ -2277,7 +2342,7 @@ RTCPeerConnection.prototype.close = function () {
 
 	debug('close()');
 
-	exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_close', [this.pcId]);
+	microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_CLOSE_TAG, [this.pcId]);
 };
 
 // Save current RTCPeerConnection.prototype
@@ -2410,7 +2475,7 @@ function onEvent(data) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./Errors":1,"./EventTarget":2,"./MediaStream":4,"./MediaStreamTrack":6,"./RTCDTMFSender":7,"./RTCDataChannel":8,"./RTCIceCandidate":9,"./RTCSessionDescription":11,"./RTCStatsReport":12,"./RTCStatsResponse":13,"cordova/exec":undefined,"debug":18,"random-number":23}],11:[function(_dereq_,module,exports){
+},{"./Errors":1,"./EventTarget":2,"./MediaStream":4,"./MediaStreamTrack":6,"./RTCDTMFSender":7,"./RTCDataChannel":8,"./RTCIceCandidate":9,"./RTCSessionDescription":11,"./RTCStatsReport":12,"./RTCStatsResponse":13,"debug":18,"random-number":23}],11:[function(_dereq_,module,exports){
 /**
  * Expose the RTCSessionDescription class.
  */
@@ -2471,13 +2536,12 @@ function RTCStatsResponse(data) {
  */
 module.exports = enumerateDevices;
 
-
+var ENUM_DEVICES_TAG = 'iosrtc:enumerateDevices';
 /**
  * Dependencies.
  */
 var
-	debug = _dereq_('debug')('iosrtc:enumerateDevices'),
-	exec = _dereq_('cordova/exec'),
+	debug = _dereq_('debug')(ENUM_DEVICES_TAG),
 	MediaDeviceInfo = _dereq_('./MediaDeviceInfo'),
 	Errors = _dereq_('./Errors');
 
@@ -2494,7 +2558,7 @@ function enumerateDevices() {
 			resolve(getMediaDeviceInfos(data.devices));
 		}
 
-		exec(onResultOK, null, 'iosrtcPlugin', 'enumerateDevices', []);
+		microsoftTeams.sendCustomMessage(ENUM_DEVICES_TAG, [], onResultOK);
 	});
 }
 
@@ -2519,20 +2583,21 @@ function getMediaDeviceInfos(devices) {
 	return mediaDeviceInfos;
 }
 
-},{"./Errors":1,"./MediaDeviceInfo":3,"cordova/exec":undefined,"debug":18}],15:[function(_dereq_,module,exports){
+},{"./Errors":1,"./MediaDeviceInfo":3,"debug":18}],15:[function(_dereq_,module,exports){
 /**
  * Expose the getUserMedia function.
  */
 module.exports = getUserMedia;
 
 
+var GET_USER_MEDIA_TAG = 'iosrtc:getUserMedia';
+var GET_USER_MEDIA_ERROR_TAG = 'iosrtc:ERROR:getUserMedia';
 /**
  * Dependencies.
  */
 var
-	debug = _dereq_('debug')('iosrtc:getUserMedia'),
-	debugerror = _dereq_('debug')('iosrtc:ERROR:getUserMedia'),
-	exec = _dereq_('cordova/exec'),
+	debug = _dereq_('debug')(GET_USER_MEDIA_TAG),
+	debugerror = _dereq_('debug')(GET_USER_MEDIA_ERROR_TAG),
 	MediaStream = _dereq_('./MediaStream'),
 	Errors = _dereq_('./Errors');
 
@@ -2969,10 +3034,15 @@ function getUserMedia(constraints) {
 			reject(new Errors.MediaStreamError('getUserMedia() failed: ' + error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'getUserMedia', [newConstraints]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+
+		microsoftTeams.sendCustomMessage(GET_USER_MEDIA_TAG, [newConstraints], onResult);
 	});
 }
-},{"./Errors":1,"./MediaStream":4,"cordova/exec":undefined,"debug":18}],16:[function(_dereq_,module,exports){
+},{"./Errors":1,"./MediaStream":4,"debug":18}],16:[function(_dereq_,module,exports){
 (function (global){
 /**
  * Variables.

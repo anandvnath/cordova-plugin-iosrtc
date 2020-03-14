@@ -27,6 +27,7 @@
 	"worker": false,
 
 	"globals": {
-		"Promise": false
+		"Promise": false,
+		"microsoftTeams": false
 	}
 }

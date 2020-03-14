@@ -4,13 +4,14 @@
 module.exports = getUserMedia;
 
 
+var GET_USER_MEDIA_TAG = 'iosrtc:getUserMedia';
+var GET_USER_MEDIA_ERROR_TAG = 'iosrtc:ERROR:getUserMedia';
 /**
  * Dependencies.
  */
 var
-	debug = require('debug')('iosrtc:getUserMedia'),
-	debugerror = require('debug')('iosrtc:ERROR:getUserMedia'),
-	exec = require('cordova/exec'),
+	debug = require('debug')(GET_USER_MEDIA_TAG),
+	debugerror = require('debug')(GET_USER_MEDIA_ERROR_TAG),
 	MediaStream = require('./MediaStream'),
 	Errors = require('./Errors');
 
@@ -447,6 +448,11 @@ function getUserMedia(constraints) {
 			reject(new Errors.MediaStreamError('getUserMedia() failed: ' + error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'getUserMedia', [newConstraints]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+
+		microsoftTeams.sendCustomMessage(GET_USER_MEDIA_TAG, [newConstraints], onResult);
 	});
 }

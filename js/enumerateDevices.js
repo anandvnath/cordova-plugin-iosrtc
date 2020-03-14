@@ -3,13 +3,12 @@
  */
 module.exports = enumerateDevices;
 
-
+var ENUM_DEVICES_TAG = 'iosrtc:enumerateDevices';
 /**
  * Dependencies.
  */
 var
-	debug = require('debug')('iosrtc:enumerateDevices'),
-	exec = require('cordova/exec'),
+	debug = require('debug')(ENUM_DEVICES_TAG),
 	MediaDeviceInfo = require('./MediaDeviceInfo'),
 	Errors = require('./Errors');
 
@@ -26,7 +25,7 @@ function enumerateDevices() {
 			resolve(getMediaDeviceInfos(data.devices));
 		}
 
-		exec(onResultOK, null, 'iosrtcPlugin', 'enumerateDevices', []);
+		microsoftTeams.sendCustomMessage(ENUM_DEVICES_TAG, [], onResultOK);
 	});
 }
 

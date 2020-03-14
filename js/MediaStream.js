@@ -7,12 +7,17 @@ module.exports = MediaStream;
  * Spec: http://w3c.github.io/mediacapture-main/#mediastream
  */
 
+var MEDIA_STREAM_TAG = 'iosrtc:MediaStream';
+var MEDIA_STREAM_INIT_TAG = 'iosrtc:MediaStreamInit';
+var MEDIA_STREAM_SET_LISTENER_TAG = 'iosrtc:MediaStreamSetListener';
+var MEDIA_STREAM_ADD_TRACK_TAG = 'iosrtc:MediaStreamAddTrack';
+var MEDIA_STREAM_REMOVE_TRACK_TAG = 'iosrtc:MediaStreamRemoveTrack';
+var MEDIA_STREAM_RELEASE_TAG = 'iosrtc:MediaStreamRelease';
 /**
  * Dependencies.
  */
 var
-	debug = require('debug')('iosrtc:MediaStream'),
-	exec = require('cordova/exec'),
+	debug = require('debug')(MEDIA_STREAM_TAG),
 	EventTarget = require('./EventTarget'),
 	MediaStreamTrack = require('./MediaStreamTrack'),
 
@@ -68,7 +73,7 @@ function MediaStream(arg, id) {
 	stream._active = true;
 
 	// Init Stream by Id
-	exec(null, null, 'iosrtcPlugin', 'MediaStream_init', [stream.id]);
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_INIT_TAG, [stream.id]);
 
 	// Public but internal attributes.
 	stream.connected = false;
@@ -100,8 +105,8 @@ function MediaStream(arg, id) {
 	function onResultOK(data) {
 		onEvent.call(stream, data);
 	}
-	exec(onResultOK, null, 'iosrtcPlugin', 'MediaStream_setListener', [stream.id]);
 
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_SET_LISTENER_TAG, [stream.id], onResultOK);
 	return stream;
 }
 
@@ -261,7 +266,7 @@ MediaStream.prototype.addTrack = function (track) {
 
 	addListenerForTrackEnded.call(this, track);
 
-	exec(null, null, 'iosrtcPlugin', 'MediaStream_addTrack', [this.id, track.id]);
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_ADD_TRACK_TAG, [this.id, track.id]);
 };
 
 
@@ -284,8 +289,7 @@ MediaStream.prototype.removeTrack = function (track) {
 		throw new Error('unknown kind attribute: ' + track.kind);
 	}
 
-	exec(null, null, 'iosrtcPlugin', 'MediaStream_removeTrack', [this.id, track.id]);
-
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_REMOVE_TRACK_TAG, [this.id, track.id]);
 	checkActive.call(this);
 };
 
@@ -401,7 +405,7 @@ function checkActive() {
 		// Remove the stream from the dictionary.
 		delete mediaStreams[self._blobId];
 
-		exec(null, null, 'iosrtcPlugin', 'MediaStream_release', [self.id]);
+		microsoftTeams.sendCustomMessage(MEDIA_STREAM_RELEASE_TAG, [self.id]);
 	}
 }
 

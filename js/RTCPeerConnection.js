@@ -3,14 +3,27 @@
  */
 module.exports = RTCPeerConnection;
 
+var RTC_PEER_CONNECTION_TAG = 'iosrtc:RTCPeerConnection';
+var RTC_PEER_CONNECTION_ERROR_TAG = 'iosrtc:ERROR:RTCPeerConnection';
 
+var RTC_PEER_CONNECTION_NEW_TAG = 'iosrtc:RTCPeerConnectionNew';
+var RTC_PEER_CONNECTION_CREATE_OFFER_TAG = 'iosrtc:RTCPeerConnectionCreateOffer';
+var RTC_PEER_CONNECTION_CREATE_ANSWER_TAG = 'iosrtc:RTCPeerConnectionCreateAnswer';
+var RTC_PEER_CONNECTION_SET_LOCAL_DESCRIPTION_TAG = 'iosrtc:RTCPeerConnectionSetLocalDescription';
+var RTC_PEER_CONNECTION_SET_REMOTE_DESCRIPTION_TAG = 'iosrtc:RTCPeerConnectionSetRemoteDescription';
+var RTC_PEER_CONNECTION_ADD_ICE_CANDIDATE_TAG = 'iosrtc:RTCPeerConnectionAddIceCandidate';
+var RTC_PEER_CONNECTION_ADD_STREAM_TAG = 'iosrtc:RTCPeerConnectionAddStream';
+var RTC_PEER_CONNECTION_REMOVE_STREAM_TAG = 'iosrtc:RTCPeerConnectionRemoveStream';
+var RTC_PEER_CONNECTION_ADD_TRACK_TAG = 'iosrtc:RTCPeerConnectionAddTrack';
+var RTC_PEER_CONNECTION_REMOVE_TRACK_TAG = 'iosrtc:RTCPeerConnectionRemoveTrack';
+var RTC_PEER_CONNECTION_GET_STATS_TAG = 'iosrtc:RTCPeerConnectionGetStats';
+var RTC_PEER_CONNECTION_CLOSE_TAG = 'iosrtc:RTCPeerConnectionClose';
 /**
  * Dependencies.
  */
 var
-	debug = require('debug')('iosrtc:RTCPeerConnection'),
-	debugerror = require('debug')('iosrtc:ERROR:RTCPeerConnection'),
-	exec = require('cordova/exec'),
+	debug = require('debug')(RTC_PEER_CONNECTION_TAG),
+	debugerror = require('debug')(RTC_PEER_CONNECTION_ERROR_TAG),
 	randomNumber = require('random-number').generator({min: 10000, max: 99999, integer: true}),
 	EventTarget = require('./EventTarget'),
 	RTCSessionDescription = require('./RTCSessionDescription'),
@@ -68,7 +81,7 @@ function RTCPeerConnection(pcConfig, pcConstraints) {
 		onEvent.call(self, data);
 	}
 
-	exec(onResultOK, null, 'iosrtcPlugin', 'new_RTCPeerConnection', [this.pcId, this.pcConfig, pcConstraints]);
+	microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_NEW_TAG, [this.pcId, this.pcConfig, pcConstraints], onResultOK);
 }
 
 RTCPeerConnection.prototype = Object.create(EventTarget.prototype);
@@ -152,7 +165,12 @@ RTCPeerConnection.prototype.createOffer = function (options) {
 			reject(new global.DOMException(error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_createOffer', [self.pcId, options]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_CREATE_OFFER_TAG, [self.pcId, options], onResult);
 	});
 };
 
@@ -192,7 +210,11 @@ RTCPeerConnection.prototype.createAnswer = function (options) {
 			reject(new global.DOMException(error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_createAnswer', [self.pcId, options]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_CREATE_ANSWER_TAG, [self.pcId, options], onResult);
 	});
 };
 
@@ -241,7 +263,12 @@ RTCPeerConnection.prototype.setLocalDescription = function (desc) {
 			reject(new Errors.InvalidSessionDescriptionError('setLocalDescription() failed: ' + error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_setLocalDescription', [self.pcId, desc]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_SET_LOCAL_DESCRIPTION_TAG, [self.pcId, desc], onResult);
 	});
 };
 
@@ -292,7 +319,11 @@ RTCPeerConnection.prototype.setRemoteDescription = function (desc) {
 			reject(new Errors.InvalidSessionDescriptionError('setRemoteDescription() failed: ' + error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_setRemoteDescription', [self.pcId, desc]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_SET_REMOTE_DESCRIPTION_TAG, [self.pcId, desc], onResult);
 	});
 };
 
@@ -344,7 +375,11 @@ RTCPeerConnection.prototype.addIceCandidate = function (candidate) {
 			reject(new global.DOMException('addIceCandidate() failed'));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_addIceCandidate', [self.pcId, candidate]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_ADD_ICE_CANDIDATE_TAG, [self.pcId, candidate], onResult);
 	});
 };
 
@@ -434,7 +469,7 @@ RTCPeerConnection.prototype.addTrack = function (track, stream) {
 			this.localStreams[stream.id] = stream;
 		}
 
-		exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_addStream', [this.pcId, stream.id]);
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_ADD_STREAM_TAG, [this.pcId, stream.id]);
 	}
 
 	for (id in this.localStreams) {
@@ -443,7 +478,7 @@ RTCPeerConnection.prototype.addTrack = function (track, stream) {
 			if (!stream || (stream && stream.id === id)) {
 				stream = this.localStreams[id];
 				stream.addTrack(track);
-				exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_addTrack', [this.pcId, track.id, id]);
+				microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_ADD_TRACK_TAG, [this.pcId, track.id, id]);
 				break;
 			}
 		}
@@ -451,7 +486,7 @@ RTCPeerConnection.prototype.addTrack = function (track, stream) {
 
 	// No Stream matched add track without stream
 	if (!stream) {
-		exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_addTrack', [this.pcId, track.id, null]);
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_ADD_TRACK_TAG, [this.pcId, track.id, null]);
 	}
 };
 
@@ -473,7 +508,7 @@ RTCPeerConnection.prototype.removeTrack = function (track) {
 				stream = this.localStreams[id];
 				stream.removeTrack(track);
 
-				exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_removeTrack', [this.pcId, track.id, stream.id]);
+				microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_REMOVE_TRACK_TAG, [this.pcId, track.id, stream.id]);
 				break;
 			}
 		}
@@ -505,7 +540,7 @@ RTCPeerConnection.prototype.addStream = function (stream) {
 
 	this.localStreams[stream.id] = stream;
 
-	exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_addStream', [this.pcId, stream.id]);
+	microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_ADD_STREAM_TAG, [this.pcId, stream.id]);
 };
 
 
@@ -527,7 +562,7 @@ RTCPeerConnection.prototype.removeStream = function (stream) {
 
 	delete this.localStreams[stream.id];
 
-	exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_removeStream', [this.pcId, stream.id]);
+	microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_REMOVE_STREAM_TAG, [this.pcId, stream.id]);
 };
 
 
@@ -592,7 +627,11 @@ RTCPeerConnection.prototype.getStats = function (selector) {
 			reject(new global.DOMException(error));
 		}
 
-		exec(onResultOK, onResultError, 'iosrtcPlugin', 'RTCPeerConnection_getStats', [self.pcId, selector ? selector.id : null]);
+		function onResult(result) {
+			if (result.error) { onResultError(result.error); }
+			else { onResultOK(result.data); }
+		}
+		microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_GET_STATS_TAG, [self.pcId, selector ? selector.id : null], onResult);
 	});
 };
 
@@ -603,7 +642,7 @@ RTCPeerConnection.prototype.close = function () {
 
 	debug('close()');
 
-	exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_close', [this.pcId]);
+	microsoftTeams.sendCustomMessage(RTC_PEER_CONNECTION_CLOSE_TAG, [this.pcId]);
 };
 
 // Save current RTCPeerConnection.prototype

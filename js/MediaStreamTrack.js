@@ -3,6 +3,10 @@
  */
 module.exports = MediaStreamTrack;
 
+var MEDIA_STREAM_TAG = 'iosrtc:MediaStreamTrack';
+var MEDIA_STREAM_SET_LISTENER_TAG = 'iosrtc:MediaStreamTrackSetListener';
+var MEDIA_STREAM_SET_ENABLED_TAG = 'iosrtc:MediaStreamTrackSetEnabled';
+var MEDIA_STREAM_STOP_TAG = 'iosrtc:MediaStreamTrackStop';
 
 /**
  * Spec: http://w3c.github.io/mediacapture-main/#mediastreamtrack
@@ -13,8 +17,7 @@ module.exports = MediaStreamTrack;
  * Dependencies.
  */
 var
-	debug = require('debug')('iosrtc:MediaStreamTrack'),
-	exec = require('cordova/exec'),
+	debug = require('debug')(MEDIA_STREAM_TAG),
 	enumerateDevices = require('./enumerateDevices'),
 	EventTarget = require('./EventTarget');
 
@@ -44,7 +47,7 @@ function MediaStreamTrack(dataFromEvent) {
 		onEvent.call(self, data);
 	}
 
-	exec(onResultOK, null, 'iosrtcPlugin', 'MediaStreamTrack_setListener', [this.id]);
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_SET_LISTENER_TAG, [this.id], onResultOK);
 }
 
 MediaStreamTrack.prototype = Object.create(EventTarget.prototype);
@@ -62,7 +65,7 @@ Object.defineProperty(MediaStreamTrack.prototype, 'enabled', {
 		debug('enabled = %s', !!value);
 
 		this._enabled = !!value;
-		exec(null, null, 'iosrtcPlugin', 'MediaStreamTrack_setEnabled', [this.id, this._enabled]);
+		microsoftTeams.sendCustomMessage(MEDIA_STREAM_SET_ENABLED_TAG, [this.id, this._enabled]);
 	}
 });
 
@@ -74,7 +77,7 @@ MediaStreamTrack.prototype.stop = function () {
 		return;
 	}
 
-	exec(null, null, 'iosrtcPlugin', 'MediaStreamTrack_stop', [this.id]);
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_STOP_TAG, [this.id]);
 };
 
 

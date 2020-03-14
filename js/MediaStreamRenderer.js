@@ -3,13 +3,19 @@
  */
 module.exports = MediaStreamRenderer;
 
+var MEDIA_STREAM_RENDERER_TAG = 'iosrtc:MediaStreamRenderer';
+var MEDIA_STREAM_RENDERER_NEW_TAG = 'iosrtc:MediaStreamRenderer';
+var MEDIA_STREAM_RENDERER_RENDER_TAG = 'iosrtc:MediaStreamRendererRender';
+var MEDIA_STREAM_RENDERER_STREAM_CHANGED_TAG = 'iosrtc:MediaStreamRendererStreamChanged';
+var MEDIA_STREAM_RENDERER_SAVE_TAG = 'iosrtc:MediaStreamRendererSave';
+var MEDIA_STREAM_RENDERER_REFRESH_TAG = 'iosrtc:MediaStreamRendererRefresh';
+var MEDIA_STREAM_RENDERER_CLOSE_TAG = 'iosrtc:MediaStreamRendererClose';
 
 /**
  * Dependencies.
  */
 var
-	debug = require('debug')('iosrtc:MediaStreamRenderer'),
-	exec = require('cordova/exec'),
+	debug = require('debug')(MEDIA_STREAM_RENDERER_TAG),
 	randomNumber = require('random-number').generator({min: 10000, max: 99999, integer: true}),
 	EventTarget = require('./EventTarget'),
 	MediaStream = require('./MediaStream');
@@ -40,8 +46,7 @@ function MediaStreamRenderer(element) {
 		onEvent.call(self, data);
 	}
 
-	exec(onResultOK, null, 'iosrtcPlugin', 'new_MediaStreamRenderer', [this.id]);
-
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_NEW_TAG, [this.id], onResultOK);
 	this.refresh();
 
 	// TODO cause video resizing jiggling add semaphore
@@ -66,7 +71,8 @@ MediaStreamRenderer.prototype.render = function (stream) {
 
 	this.stream = stream;
 
-	exec(null, null, 'iosrtcPlugin', 'MediaStreamRenderer_render', [this.id, stream.id]);
+
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_RENDER_TAG, [this.id, stream.id]);
 
 	// Subscribe to 'update' event so we call native mediaStreamChanged() on it.
 	stream.addEventListener('update', function () {
@@ -76,7 +82,7 @@ MediaStreamRenderer.prototype.render = function (stream) {
 
 		debug('MediaStream emits "update", calling native mediaStreamChanged()');
 
-		exec(null, null, 'iosrtcPlugin', 'MediaStreamRenderer_mediaStreamChanged', [self.id]);
+		microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_STREAM_CHANGED_TAG, [self.id]);
 	});
 
 	// Subscribe to 'inactive' event and emit "close" so the video element can react.
@@ -129,7 +135,12 @@ MediaStreamRenderer.prototype.save = function (callback) {
 		callback(null);
 	}
 
-	exec(onResultOK, onResultError, 'iosrtcPlugin', 'MediaStreamRenderer_save', [this.id]);
+	function onResult(result) {
+		if (result.error) { onResultError(result.error); }
+		else { onResultOK(result.data); }
+	}
+
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_SAVE_TAG, [this.id], onResult);
 };
 
 MediaStreamRenderer.prototype.refresh = function () {
@@ -340,7 +351,7 @@ MediaStreamRenderer.prototype.refresh = function () {
 
 		debug('refresh() | [data:%o]', data);
 
-		exec(null, null, 'iosrtcPlugin', 'MediaStreamRenderer_refresh', [this.id, data]);
+		microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_REFRESH_TAG, [this.id, data]);
 	}
 };
 
@@ -353,7 +364,7 @@ MediaStreamRenderer.prototype.close = function () {
 	}
 	this.stream = undefined;
 
-	exec(null, null, 'iosrtcPlugin', 'MediaStreamRenderer_close', [this.id]);
+	microsoftTeams.sendCustomMessage(MEDIA_STREAM_RENDERER_CLOSE_TAG, [this.id]);
 	if (this.refreshInterval) {
 		clearInterval(this.refreshInterval);
 		delete this.refreshInterval;

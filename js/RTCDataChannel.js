@@ -3,14 +3,20 @@
  */
 module.exports = RTCDataChannel;
 
+var RTC_DATA_CHANNEL_TAG = 'iosrtc:RTCDataChannel';
+var RTC_DATA_CHANNEL_ERROR_TAG = 'iosrtc:ERROR:RTCDataChannel';
+var RTC_DATA_CHANNEL_CREATE_DATA_CHANNEL_TAG = 'iosrtc:RTCDataChannelCreateDataChannel';
+var RTC_DATA_CHANNEL_SET_LISTENER_TAG = 'iosrtc:RTCDataChannelSetListener';
+var RTC_DATA_CHANNEL_SEND_STRING_TAG = 'iosrtc:RTCDataChannelSendString';
+var RTC_DATA_CHANNEL_SEND_BINARY_TAG = 'iosrtc:RTCDataChannelSendBinary';
+var RTC_DATA_CHANNEL_CLOSE_TAG = 'iosrtc:RTCDataChannelClose';
 
 /**
  * Dependencies.
  */
 var
-	debug = require('debug')('iosrtc:RTCDataChannel'),
-	debugerror = require('debug')('iosrtc:ERROR:RTCDataChannel'),
-	exec = require('cordova/exec'),
+	debug = require('debug')(RTC_DATA_CHANNEL_TAG),
+	debugerror = require('debug')(RTC_DATA_CHANNEL_ERROR_TAG),
 	randomNumber = require('random-number').generator({min: 10000, max: 99999, integer: true}),
 	EventTarget = require('./EventTarget');
 
@@ -65,7 +71,7 @@ function RTCDataChannel(peerConnection, label, options, dataFromEvent) {
 		this.peerConnection = peerConnection;
 		this.dcId = randomNumber();
 
-		exec(onResultOK, null, 'iosrtcPlugin', 'RTCPeerConnection_createDataChannel', [this.peerConnection.pcId, this.dcId, label, options]);
+		microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_CREATE_DATA_CHANNEL_TAG, [this.peerConnection.pcId, this.dcId, label, options], onResultOK);
 	// Created via pc.ondatachannel.
 	} else {
 		debug('new() | [dataFromEvent:%o]', dataFromEvent);
@@ -86,7 +92,7 @@ function RTCDataChannel(peerConnection, label, options, dataFromEvent) {
 		this.peerConnection = peerConnection;
 		this.dcId = dataFromEvent.dcId;
 
-		exec(onResultOK, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDataChannel_setListener', [this.peerConnection.pcId, this.dcId]);
+		microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_SET_LISTENER_TAG, [this.peerConnection.pcId, this.dcId], onResultOK);
 	}
 
 	function onResultOK(data) {
@@ -130,9 +136,9 @@ RTCDataChannel.prototype.send = function (data) {
 	}
 
 	if (typeof data === 'string' || data instanceof String) {
-		exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDataChannel_sendString', [this.peerConnection.pcId, this.dcId, data]);
+		microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_SEND_STRING_TAG, [this.peerConnection.pcId, this.dcId, data]);
 	} else if (window.ArrayBuffer && data instanceof window.ArrayBuffer) {
-		exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDataChannel_sendBinary', [this.peerConnection.pcId, this.dcId, data]);
+		microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_SEND_BINARY_TAG, [this.peerConnection.pcId, this.dcId, data]);
 	} else if (
 		(window.Int8Array && data instanceof window.Int8Array) ||
 		(window.Uint8Array && data instanceof window.Uint8Array) ||
@@ -145,7 +151,7 @@ RTCDataChannel.prototype.send = function (data) {
 		(window.Float64Array && data instanceof window.Float64Array) ||
 		(window.DataView && data instanceof window.DataView)
 	) {
-		exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDataChannel_sendBinary', [this.peerConnection.pcId, this.dcId, data.buffer]);
+		microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_SEND_BINARY_TAG, [this.peerConnection.pcId, this.dcId, data.buffer]);
 	} else {
 		throw new Error('invalid data type');
 	}
@@ -161,7 +167,7 @@ RTCDataChannel.prototype.close = function () {
 
 	this.readyState = 'closing';
 
-	exec(null, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDataChannel_close', [this.peerConnection.pcId, this.dcId]);
+	microsoftTeams.sendCustomMessage(RTC_DATA_CHANNEL_CLOSE_TAG, [this.peerConnection.pcId, this.dcId]);
 };
 
 

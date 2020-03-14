@@ -3,14 +3,17 @@
  */
 module.exports = RTCDTMFSender;
 
+var RTCDTMF_SENDER_TAG = 'iosrtc:RTCDTMFSender';
+var RTCDTMF_SENDER_ERROR_TAG = 'iosrtc:ERROR:RTCDTMFSender';
 
+var RTCDTMF_SENDER_CREATE_DTMF_SENDER_TAG = 'iosrtc:RTCDTMFSenderCreateDTMFSender';
+var RTCDTMF_SENDER_INSERT_DTMF_TAG = 'iosrtc:RTCDTMFSenderInsertDTMF';
 /**
  * Dependencies.
  */
 var
-	debug = require('debug')('iosrtc:RTCDTMFSender'),
-	debugerror = require('debug')('iosrtc:ERROR:RTCDTMFSender'),
-	exec = require('cordova/exec'),
+	debug = require('debug')(RTCDTMF_SENDER_TAG),
+	debugerror = require('debug')(RTCDTMF_SENDER_ERROR_TAG),
 	randomNumber = require('random-number').generator({min: 10000, max: 99999, integer: true}),
 	EventTarget = require('./EventTarget');
 
@@ -41,8 +44,7 @@ function RTCDTMFSender(peerConnection, track) {
 		onEvent.call(self, data);
 	}
 
-	exec(onResultOK, null, 'iosrtcPlugin', 'RTCPeerConnection_createDTMFSender', [this.peerConnection.pcId, this.dsId, this._track.id]);
-
+	microsoftTeams.sendCustomMessage(RTCDTMF_SENDER_CREATE_DTMF_SENDER_TAG, [this.peerConnection.pcId, this.dsId, this._track.id], onResultOK);
 }
 
 RTCDTMFSender.prototype = Object.create(EventTarget.prototype);
@@ -104,7 +106,7 @@ RTCDTMFSender.prototype.insertDTMF = function (tones, duration, interToneGap) {
 		onEvent.call(self, data);
 	}
 
-	exec(onResultOK, null, 'iosrtcPlugin', 'RTCPeerConnection_RTCDTMFSender_insertDTMF', [this.peerConnection.pcId, this.dsId, tones, this._duration, this._interToneGap]);
+	microsoftTeams.sendCustomMessage(RTCDTMF_SENDER_INSERT_DTMF_TAG, [this.peerConnection.pcId, this.dsId, tones, this._duration, this._interToneGap], onResultOK);
 };
 
 
