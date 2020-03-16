@@ -2,6 +2,12 @@
  * Variables.
  */
 
+var SETUP_SELECT_AUDIO_OUTPUT_EARPIECE_TAG = 'iosrtc:selectAudioOutputEarpiece';
+var SETUP_SELECT_AUDIO_OUTPUT_SPEAKER_TAG = 'iosrtc:selectAudioOutputSpeaker';
+var SETUP_RTC_TURN_ON_SPEAKER_TAG = 'iosrtc:RTCTurnOnSpeaker';
+var SETUP_RTC_REQUEST_PERMISSION_TAG = 'iosrtc:RTCRequestPermission';
+var SETUP_DUMP_TAG = 'iosrtc:dump';
+
 var
 	// Dictionary of MediaStreamRenderers.
 	// - key: MediaStreamRenderer id.
@@ -18,7 +24,6 @@ var
  * Dependencies.
  */
 	debug                  = require('debug')('iosrtc'),
-	exec                   = require('cordova/exec'),
 	domready               = require('domready'),
 
 	getUserMedia           = require('./getUserMedia'),
@@ -92,10 +97,10 @@ function selectAudioOutput(output) {
 
 	switch (output) {
 		case 'earpiece':
-			exec(null, null, 'iosrtcPlugin', 'selectAudioOutputEarpiece', []);
+			microsoftTeams.sendCustomMessage(SETUP_SELECT_AUDIO_OUTPUT_EARPIECE_TAG, []);
 			break;
 		case 'speaker':
-			exec(null, null, 'iosrtcPlugin', 'selectAudioOutputSpeaker', []);
+			microsoftTeams.sendCustomMessage(SETUP_SELECT_AUDIO_OUTPUT_SPEAKER_TAG, []);
 			break;
 		default:
 			throw new Error('output must be "earpiece" or "speaker"');
@@ -105,7 +110,7 @@ function selectAudioOutput(output) {
 function turnOnSpeaker(isTurnOn) {
 	debug('turnOnSpeaker() | [isTurnOn:"%s"]', isTurnOn);
 
-	exec(null, null, 'iosrtcPlugin', "RTCTurnOnSpeaker", [isTurnOn]);
+	microsoftTeams.sendCustomMessage(SETUP_RTC_TURN_ON_SPEAKER_TAG, [isTurnOn]);
 }
 
 function requestPermission(needMic, needCamera, callback) {
@@ -118,7 +123,12 @@ function requestPermission(needMic, needCamera, callback) {
 	function error() {
 		callback(false);
 	}
-	exec(ok, error, 'iosrtcPlugin', "RTCRequestPermission", [needMic, needCamera]);
+
+	function onResult(result) {
+		if (result.error) { error(result.error); }
+		else { ok(result.data); }
+	}
+	microsoftTeams.sendCustomMessage(SETUP_RTC_REQUEST_PERMISSION_TAG, [needMic, needCamera], onResult);
 }
 
 function callbackifyMethod(originalMethod) {
@@ -202,5 +212,5 @@ function registerGlobals(doNotRestoreCallbacksSupport) {
 }
 
 function dump() {
-	exec(null, null, 'iosrtcPlugin', 'dump', []);
+	microsoftTeams.sendCustomMessage(SETUP_DUMP_TAG, []);
 }

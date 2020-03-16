@@ -3048,6 +3048,12 @@ function getUserMedia(constraints) {
  * Variables.
  */
 
+var SETUP_SELECT_AUDIO_OUTPUT_EARPIECE_TAG = 'iosrtc:selectAudioOutputEarpiece';
+var SETUP_SELECT_AUDIO_OUTPUT_SPEAKER_TAG = 'iosrtc:selectAudioOutputSpeaker';
+var SETUP_RTC_TURN_ON_SPEAKER_TAG = 'iosrtc:RTCTurnOnSpeaker';
+var SETUP_RTC_REQUEST_PERMISSION_TAG = 'iosrtc:RTCRequestPermission';
+var SETUP_DUMP_TAG = 'iosrtc:dump';
+
 var
 	// Dictionary of MediaStreamRenderers.
 	// - key: MediaStreamRenderer id.
@@ -3064,7 +3070,6 @@ var
  * Dependencies.
  */
 	debug                  = _dereq_('debug')('iosrtc'),
-	exec                   = _dereq_('cordova/exec'),
 	domready               = _dereq_('domready'),
 
 	getUserMedia           = _dereq_('./getUserMedia'),
@@ -3138,10 +3143,10 @@ function selectAudioOutput(output) {
 
 	switch (output) {
 		case 'earpiece':
-			exec(null, null, 'iosrtcPlugin', 'selectAudioOutputEarpiece', []);
+			microsoftTeams.sendCustomMessage(SETUP_SELECT_AUDIO_OUTPUT_EARPIECE_TAG, []);
 			break;
 		case 'speaker':
-			exec(null, null, 'iosrtcPlugin', 'selectAudioOutputSpeaker', []);
+			microsoftTeams.sendCustomMessage(SETUP_SELECT_AUDIO_OUTPUT_SPEAKER_TAG, []);
 			break;
 		default:
 			throw new Error('output must be "earpiece" or "speaker"');
@@ -3151,7 +3156,7 @@ function selectAudioOutput(output) {
 function turnOnSpeaker(isTurnOn) {
 	debug('turnOnSpeaker() | [isTurnOn:"%s"]', isTurnOn);
 
-	exec(null, null, 'iosrtcPlugin', "RTCTurnOnSpeaker", [isTurnOn]);
+	microsoftTeams.sendCustomMessage(SETUP_RTC_TURN_ON_SPEAKER_TAG, [isTurnOn]);
 }
 
 function requestPermission(needMic, needCamera, callback) {
@@ -3164,7 +3169,12 @@ function requestPermission(needMic, needCamera, callback) {
 	function error() {
 		callback(false);
 	}
-	exec(ok, error, 'iosrtcPlugin', "RTCRequestPermission", [needMic, needCamera]);
+
+	function onResult(result) {
+		if (result.error) { error(result.error); }
+		else { ok(result.data); }
+	}
+	microsoftTeams.sendCustomMessage(SETUP_RTC_REQUEST_PERMISSION_TAG, [needMic, needCamera], onResult);
 }
 
 function callbackifyMethod(originalMethod) {
@@ -3248,11 +3258,11 @@ function registerGlobals(doNotRestoreCallbacksSupport) {
 }
 
 function dump() {
-	exec(null, null, 'iosrtcPlugin', 'dump', []);
+	microsoftTeams.sendCustomMessage(SETUP_DUMP_TAG, []);
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./MediaStream":4,"./MediaStreamTrack":6,"./RTCIceCandidate":9,"./RTCPeerConnection":10,"./RTCSessionDescription":11,"./enumerateDevices":14,"./getUserMedia":15,"./videoElementsHandler":17,"cordova/exec":undefined,"debug":18,"domready":20}],17:[function(_dereq_,module,exports){
+},{"./MediaStream":4,"./MediaStreamTrack":6,"./RTCIceCandidate":9,"./RTCPeerConnection":10,"./RTCSessionDescription":11,"./enumerateDevices":14,"./getUserMedia":15,"./videoElementsHandler":17,"debug":18,"domready":20}],17:[function(_dereq_,module,exports){
 /**
  * Expose a function that must be called when the library is loaded.
  * And also a helper function.
